@@ -1,5 +1,11 @@
 # Ludus AI — Architettura (bozza di design)
 
+> ⚠️ **La fonte canonica della documentazione è ora la [Wiki del progetto](../../wiki)**
+> (in inglese), generata dai file in [`wiki/`](../wiki). Questo documento resta lo
+> **scratchpad italiano** dove sono nate le idee; per il design elaborato (contratto
+> `RunResult`, i 5 adapter, Livello C concreto, domande aperte rifatte, roadmap affinata)
+> vedi la wiki.
+
 > Documento di lavoro, scritto in italiano per ragionarci sopra.
 > Quando il design sarà stabile lo tradurremo/sintetizzeremo nel README pubblico.
 > Stato: **bozza** · Caso d'uso pilota: testare il plugin **Sethlans**.
