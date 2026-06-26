@@ -20,6 +20,8 @@ which invocation mechanism ([Adapters](Adapters)) it exercises. Terms in
 - **Exit:** `ludus run scenarios/architect/…` prints score + cost; the rerun is
   reproducible (pinned model / `--bare`-equivalent); the `RunResult` schema validates.
 - **Mechanism:** Agent SDK as-main-agent + hooks for the tool-call trace.
+- **Detailed plan:** [M1 Analysis](M1-Analysis) — component decomposition, build sequence,
+  risks, and the exit checklist.
 
 **Why the isolated subagent, not the full pipeline, as the skeleton:**
 
