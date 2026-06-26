@@ -26,6 +26,7 @@ and remains a scratchpad until the wiki stabilizes. The wiki pages are generated
    LLM-as-judge, human-in-loop — and where the handoff-contract gate lives.
 5. **[Scenario Format](Scenario-Format)** — how a test case is written, in YAML.
 6. **[Roadmap](Roadmap)** — M0–M5, what ships at each step, and why M1 starts where it does.
+   See also the [M1 Analysis](M1-Analysis) — the milestone decomposed into a sequenced build.
 7. **[Open Questions](Open-Questions)** — what is resolved, what still needs a decision.
 8. **[Build vs Buy](Build-vs-Buy)** — what Ludus owns vs what it integrates.
 
