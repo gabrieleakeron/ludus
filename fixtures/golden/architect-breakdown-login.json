@@ -1,0 +1,92 @@
+{
+  "artifact": {
+    "type": "breakdown",
+    "text": "## Task Breakdown — Login Story\n\n### Backend Tasks\n1. **FastAPI auth endpoint** (`POST /auth/login`)\n   - Validate email+password against DB (bcrypt)\n   - Issue JWT access token (1h) + refresh token (7d) in HttpOnly cookie\n   - Rate-limit: 5 attempts / 15 min per IP; lock after 5 failures\n\n2. **PostgreSQL user model + migration**\n   - Table: `auth.users(id, email, password_hash, locked_until)`\n   - Alembic migration, bcrypt on write path\n\n### Frontend Tasks\n3. **Angular login form component**\n   - Reactive form: email + password + \"Remember me\" checkbox\n   - Inline validation, clear error messages\n   - Calls auth service on submit\n\n4. **Auth service (Angular)**\n   - POST /auth/login, store session token, handle 401/429\n\n### Rationale\nDecomposed the login story into two backend tasks (endpoint + DB) and two frontend tasks (form + service). The split keeps backend auth logic isolated from UI concerns, enabling parallel development and targeted evaluation at Level A.",
+    "structured_json": {
+      "tasks": [
+        {
+          "id": 1,
+          "title": "FastAPI auth endpoint POST /auth/login",
+          "layer": "backend",
+          "rationale": "Core authentication logic; issues JWT tokens and enforces rate limiting"
+        },
+        {
+          "id": 2,
+          "title": "PostgreSQL user model and Alembic migration",
+          "layer": "backend",
+          "rationale": "Persistent storage for user credentials with bcrypt hashing"
+        },
+        {
+          "id": 3,
+          "title": "Angular login form component",
+          "layer": "frontend",
+          "rationale": "User-facing reactive form with inline validation"
+        },
+        {
+          "id": 4,
+          "title": "Angular auth service",
+          "layer": "frontend",
+          "rationale": "Client-side service to call the auth endpoint and manage session"
+        }
+      ],
+      "rationale": "Split into backend (endpoint + DB) and frontend (form + service) to allow parallel development and isolated evaluation."
+    },
+    "files": [
+      {
+        "path": "tasks.md",
+        "content": "# Tasks\n1. FastAPI auth endpoint\n2. PostgreSQL user model\n3. Angular login form\n4. Angular auth service",
+        "ref": null
+      }
+    ]
+  },
+  "trace": {
+    "tool_calls": [
+      {
+        "name": "Read",
+        "input": {"file_path": "fixtures/stories/login.md"},
+        "output": "# Story: User Login\n\nAs a registered user...",
+        "parent_tool_use_id": null,
+        "phase": "analysis"
+      },
+      {
+        "name": "Bash",
+        "input": {"command": "ls -la src/"},
+        "output": "src/\n  auth/\n  users/",
+        "parent_tool_use_id": null,
+        "phase": "analysis"
+      },
+      {
+        "name": "Write",
+        "input": {"file_path": "tasks.md", "content": "# Tasks\n1. FastAPI auth endpoint\n..."},
+        "output": "File written successfully",
+        "parent_tool_use_id": null,
+        "phase": "output"
+      }
+    ],
+    "tokens": {
+      "input": 1842,
+      "output": 612,
+      "cache_read": 320,
+      "cache_write": 88
+    },
+    "cost_usd": 0.006134,
+    "latency_ms": 4320.5,
+    "session_id": "golden-session-20260629-001",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Please break down the following story into development tasks...\n\n# Story: User Login..."
+      },
+      {
+        "role": "assistant",
+        "content": "## Task Breakdown — Login Story\n\n### Backend Tasks\n1. **FastAPI auth endpoint**..."
+      }
+    ]
+  },
+  "status": "completed",
+  "raw": {
+    "source": "golden-fixture",
+    "recorded_at": "2026-06-29T00:00:00Z",
+    "sdk_version": null
+  }
+}

@@ -1,0 +1,37 @@
+id: architetto-scomposizione-login
+target: mock.architect
+description: "Architect breaks down the Login story into development tasks"
+repeat: 5
+
+input:
+  prompt_fixture: ../../fixtures/stories/login.md
+
+context:
+  files: []
+
+run_config:
+  max_budget_usd: 0.50
+  model: claude-opus-4-5
+  bare: true
+
+expectations:
+  - type: schema
+    must_have_fields:
+      - tasks
+      - rationale
+
+  - type: contains
+    any_of:
+      - FastAPI
+      - endpoint
+      - auth
+      - authentication
+
+  - type: llm_judge
+    rubric: ../../rubrics/architect.md
+    pass_threshold: 0.5
+
+# Forward-compat fields (ignored in M1 — do not error)
+gate:
+  min_pass_rate: 0.9
+  max_regression_vs_baseline: 0.05
