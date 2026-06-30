@@ -1,4 +1,5 @@
 """Tests for Reporter — mean/variance math and output format."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,16 +10,11 @@ from ludus.models import Artifact, Evaluation, RunOutcome, RunResult, Tokens, Tr
 from ludus.report import Reporter, _population_variance
 from ludus.scenario import load_scenario
 
-SCENARIO_PATH = (
-    Path(__file__).parent.parent / "scenarios" / "architect" / "breakdown-login.yaml"
-)
+SCENARIO_PATH = Path(__file__).parent.parent / "scenarios" / "architect" / "breakdown-login.yaml"
 
 
 def _make_outcome(scores: list[float], cost: float = 0.001, latency: float = 100.0) -> RunOutcome:
-    evals = [
-        Evaluation(type=f"type_{i}", score=s, passed=s >= 0.5)
-        for i, s in enumerate(scores)
-    ]
+    evals = [Evaluation(type=f"type_{i}", score=s, passed=s >= 0.5) for i, s in enumerate(scores)]
     rr = RunResult(
         artifact=Artifact(type="text", text="hello"),
         trace=Trace(
@@ -31,6 +27,7 @@ def _make_outcome(scores: list[float], cost: float = 0.001, latency: float = 100
 
 
 # --- Math helpers ---
+
 
 def test_population_variance_identical_values() -> None:
     """Variance of identical values is 0."""
@@ -48,6 +45,7 @@ def test_population_variance_empty() -> None:
 
 
 # --- Reporter stats ---
+
 
 def test_reporter_variance_zero_on_identical_mock_runs() -> None:
     """Mock path: all runs identical → variance == 0 (AC5 + AD6/O4)."""

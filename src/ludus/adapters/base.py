@@ -5,6 +5,7 @@ The contract:
   - run() always returns a valid RunResult
   - failures map to status != "completed", never an unhandled exception
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

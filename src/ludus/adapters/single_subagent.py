@@ -14,6 +14,7 @@ SDK note: The exact claude-agent-sdk API is verified against the installed versi
 at build time. Since the SDK is not installed in this environment, the code is
 structured per the documented intent (query() + hooks), with lazy import guards.
 """
+
 from __future__ import annotations
 
 import os

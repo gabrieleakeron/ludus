@@ -1,16 +1,23 @@
 """Reporter — aggregates N RunOutcomes and renders a console report.
 
 Aggregation (AD5):
-  - per-run aggregate score = mean of that run's evaluator scores
+  - per-run aggregate score = mean of that run's evaluator scores (via aggregate.py)
   - overall mean + population variance + stddev of the per-run aggregate score
   - cost/tokens/latency totals & means
   - tool-call count
+
+M2 addition:
+  - render_gate(gate_result) -> str  renders the GATE section (AD-M2-4).
 """
+
 from __future__ import annotations
 
 import math
 from collections import defaultdict
 
+from ludus.aggregate import overall_mean as _overall_mean
+from ludus.aggregate import per_run_scores as _per_run_scores
+from ludus.gate import GateResult
 from ludus.models import RunOutcome
 from ludus.scenario import Scenario
 
@@ -22,6 +29,45 @@ def _population_variance(values: list[float]) -> float:
         return 0.0
     mean = sum(values) / n
     return sum((v - mean) ** 2 for v in values) / n
+
+
+def render_gate(gate_result: GateResult) -> str:
+    """Render the GATE section for a GateResult.
+
+    Args:
+        gate_result: Outcome of gate.evaluate_gate().
+
+    Returns:
+        A multi-line formatted string; empty string when ``evaluated is False``.
+    """
+    if not gate_result.evaluated:
+        return ""
+
+    sep = "=" * 60
+    thin = "-" * 60
+    verdict = "PASS" if gate_result.passed else "FAIL"
+
+    lines: list[str] = [
+        thin,
+        "  GATE",
+        thin,
+    ]
+    for sc in gate_result.sub_checks:
+        if sc.status == "n/a":
+            val_str = "n/a"
+            thr_str = f"threshold={sc.threshold:.4f}" if sc.threshold is not None else ""
+            lines.append(f"  {sc.name:<30}  {val_str:<10}  {thr_str}  => n/a")
+        else:
+            val_str = f"{sc.value:.4f}" if sc.value is not None else "n/a"
+            thr_str = f"threshold={sc.threshold:.4f}" if sc.threshold is not None else ""
+            lines.append(f"  {sc.name:<30}  value={val_str:<10}  {thr_str}  => {sc.status}")
+    lines += [
+        thin,
+        f"  Overall verdict: {verdict}",
+        sep,
+        "",
+    ]
+    return "\n".join(lines)
 
 
 class Reporter:
@@ -41,16 +87,9 @@ class Reporter:
         if n == 0:
             return "No outcomes to report."
 
-        # --- Per-run aggregate score ---
-        per_run_scores: list[float] = []
-        for outcome in outcomes:
-            evals = outcome.evaluations
-            if evals:
-                per_run_scores.append(sum(e.score for e in evals) / len(evals))
-            else:
-                per_run_scores.append(0.0)
-
-        overall_mean = sum(per_run_scores) / n
+        # --- Per-run aggregate score (shared helper — AD-M2-4) ---
+        per_run_scores = _per_run_scores(outcomes)
+        overall_mean = _overall_mean(outcomes)
         variance = _population_variance(per_run_scores)
         stddev = math.sqrt(variance)
 
@@ -99,9 +138,7 @@ class Reporter:
             pass_rate = sum(1 for p in eval_pass_by_type[eval_type] if p) / len(
                 eval_pass_by_type[eval_type]
             )
-            lines.append(
-                f"  [{eval_type:<14}]  mean={mean_score:.4f}  pass_rate={pass_rate:.0%}"
-            )
+            lines.append(f"  [{eval_type:<14}]  mean={mean_score:.4f}  pass_rate={pass_rate:.0%}")
 
         lines += [
             thin,

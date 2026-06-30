@@ -4,6 +4,7 @@ Harness.run(target, scenario, n) -> list[RunOutcome]
 
 No aggregation, no printing.  Aggregation lives in the Reporter (AD5).
 """
+
 from __future__ import annotations
 
 from ludus.adapters import resolve

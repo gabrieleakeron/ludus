@@ -6,6 +6,7 @@ Registered targets:
   "mock.architect"           -> MockAdapter (default M1 target, keyless)
   "sethlans.agent.architect" -> SingleSubagentAdapter (Level A, requires API key)
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable

@@ -1,4 +1,5 @@
 """Tests for Harness — verifies it loops N times and returns N outcomes."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -8,9 +9,7 @@ import pytest
 from ludus.harness import Harness
 from ludus.scenario import load_scenario
 
-SCENARIO_PATH = (
-    Path(__file__).parent.parent / "scenarios" / "architect" / "breakdown-login.yaml"
-)
+SCENARIO_PATH = Path(__file__).parent.parent / "scenarios" / "architect" / "breakdown-login.yaml"
 
 
 def test_harness_returns_n_outcomes() -> None:

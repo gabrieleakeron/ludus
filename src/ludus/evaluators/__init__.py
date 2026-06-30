@@ -2,6 +2,7 @@
 
 build_evaluators(expectations) -> list[Evaluator]
 """
+
 from __future__ import annotations
 
 from ludus.evaluators.base import Evaluator

@@ -6,6 +6,7 @@ AnthropicLlmJudge — calls the Anthropic Messages API with a rubric. Activated 
 
 Both implement the same Evaluator interface and read ONLY artifact+trace.
 """
+
 from __future__ import annotations
 
 import os
@@ -130,7 +131,7 @@ class AnthropicLlmJudge(Evaluator):
             f"You are an evaluator. Score the following AI-generated output against the rubric.\n\n"
             f"## Rubric\n{rubric_text}\n\n"
             f"## Output to evaluate\n{artifact_text}\n\n"
-            f"Respond with a JSON object: {{\"score\": <0.0-1.0>, \"reasoning\": \"<brief>\"}}. "
+            f'Respond with a JSON object: {{"score": <0.0-1.0>, "reasoning": "<brief>"}}. '
             f"Score 1.0 = fully meets rubric, 0.0 = does not meet it at all."
         )
 

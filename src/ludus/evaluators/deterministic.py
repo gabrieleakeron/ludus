@@ -5,6 +5,7 @@ SchemaEvaluator  — checks that all must_have_fields appear in the artifact's
 ContainsEvaluator — checks that at least one of the any_of strings appears
                     in artifact.text or artifact.structured_json (serialized).
 """
+
 from __future__ import annotations
 
 import json
@@ -69,8 +70,6 @@ class ContainsEvaluator(Evaluator):
 
         passed = len(matched) > 0
         score = 1.0 if passed else 0.0
-        detail = (
-            f"Found: {matched}" if passed else f"None of {self._any_of} found in artifact."
-        )
+        detail = f"Found: {matched}" if passed else f"None of {self._any_of} found in artifact."
 
         return Evaluation(type="contains", score=score, passed=passed, detail=detail)

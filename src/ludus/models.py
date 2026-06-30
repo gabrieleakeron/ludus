@@ -6,6 +6,7 @@ These Pydantic models are the load-bearing contract (AD4):
 
 Evaluators read ONLY `artifact` and `trace`; adapter internals live in `raw`.
 """
+
 from __future__ import annotations
 
 from typing import Any, Literal

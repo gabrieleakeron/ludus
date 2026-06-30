@@ -1,4 +1,5 @@
 """Tests for the scenario loader (AD3)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -8,9 +9,7 @@ import yaml
 
 from ludus.scenario import ScenarioError, load_scenario
 
-SCENARIO_PATH = (
-    Path(__file__).parent.parent / "scenarios" / "architect" / "breakdown-login.yaml"
-)
+SCENARIO_PATH = Path(__file__).parent.parent / "scenarios" / "architect" / "breakdown-login.yaml"
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
 
@@ -40,16 +39,16 @@ def test_scenario_rubric_path_resolved() -> None:
     assert Path(llm_exp.rubric).exists()
 
 
-def test_scenario_unknown_keys_ignored(tmp_path: Path) -> None:
-    """gate, baseline, contract, code_gate must be silently ignored (forward-compat)."""
+def test_scenario_still_unknown_keys_ignored(tmp_path: Path) -> None:
+    """baseline, contract, code_gate, and arbitrary future keys must still be ignored (M2)."""
     scenario_data = {
         "id": "test-scenario",
         "target": "mock.architect",
         "repeat": 1,
         "input": {"prompt_fixture": str(FIXTURES_DIR / "stories" / "login.md")},
         "expectations": [{"type": "contains", "any_of": ["hello"]}],
-        # Unknown M2+ keys — must not cause an error
-        "gate": {"min_pass_rate": 0.9},
+        # gate is now parsed (M2); the others still ignored
+        "gate": {"min_pass_rate": 0.9, "max_regression_vs_baseline": 0.05},
         "baseline": {"storage": "files"},
         "contract": {"schema": "v1"},
         "code_gate": {"lint": True},
@@ -60,6 +59,35 @@ def test_scenario_unknown_keys_ignored(tmp_path: Path) -> None:
 
     scenario = load_scenario(yaml_file)
     assert scenario.id == "test-scenario"
+    # gate is now parsed, not ignored
+    assert scenario.gate is not None
+    assert scenario.gate.min_pass_rate == 0.9
+
+
+# --- M2 gate parsing tests (AC1, AC2) ---
+
+
+def test_scenario_gate_parsed_from_real_yaml() -> None:
+    """breakdown-login.yaml gate block must parse to floats (AC1)."""
+    scenario = load_scenario(SCENARIO_PATH)
+    assert scenario.gate is not None
+    assert scenario.gate.min_pass_rate == pytest.approx(0.9)
+    assert scenario.gate.max_regression_vs_baseline == pytest.approx(0.05)
+
+
+def test_scenario_gate_none_when_absent(tmp_path: Path) -> None:
+    """A scenario without gate: must have gate=None (AC2)."""
+    scenario_data = {
+        "id": "no-gate-scenario",
+        "target": "mock.architect",
+        "repeat": 1,
+        "input": {"prompt_fixture": str(FIXTURES_DIR / "stories" / "login.md")},
+        "expectations": [],
+    }
+    yaml_file = tmp_path / "no_gate.yaml"
+    yaml_file.write_text(yaml.dump(scenario_data), encoding="utf-8")
+    scenario = load_scenario(yaml_file)
+    assert scenario.gate is None
 
 
 def test_scenario_missing_required_field_raises(tmp_path: Path) -> None:

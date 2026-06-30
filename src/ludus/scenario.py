@@ -1,13 +1,16 @@
-"""Scenario YAML loader (AD3).
+"""Scenario YAML loader (AD3, extended in M2).
 
-Parses only the M1 subset:
+Parses the M1 subset plus the M2 ``gate`` block:
   id, target, description, repeat, input.prompt_fixture,
-  context.files, run_config{max_budget_usd, model, bare}, expectations[]
+  context.files, run_config{max_budget_usd, model, bare},
+  expectations[], gate{min_pass_rate, max_regression_vs_baseline}
 
-Unknown keys (gate, baseline, contract, code_gate) are silently ignored.
+Other unknown keys (baseline, contract, code_gate) are still silently ignored
+via ``Scenario.model_config extra="ignore"``.
 Paths in prompt_fixture / rubric / context.files are resolved relative
 to the scenario file's parent directory.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -19,6 +22,23 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 class ScenarioError(Exception):
     """Raised when a scenario file cannot be parsed or is invalid."""
+
+
+class Gate(BaseModel):
+    """Gate policy for M2 (AD-M2-3).
+
+    Parsed from the ``gate:`` block in the scenario YAML.
+    Both thresholds are required when the block is present.
+    ``extra="allow"`` allows future sub-keys to be added without breaking this version.
+    """
+
+    min_pass_rate: float
+    """Minimum fraction of runs that must pass (all evaluators green)."""
+
+    max_regression_vs_baseline: float
+    """Maximum allowed drop in overall_mean relative to the stored baseline."""
+
+    model_config = {"extra": "allow"}  # forward-compat for future gate sub-keys
 
 
 class ExpectationSchema(BaseModel):
@@ -60,7 +80,7 @@ class RunConfig(BaseModel):
 
 
 class Scenario(BaseModel):
-    """Parsed scenario — only M1 fields are exposed; unknown keys are dropped."""
+    """Parsed scenario — M1 fields plus the M2 gate; other unknown keys are dropped."""
 
     id: str
     target: str
@@ -70,11 +90,13 @@ class Scenario(BaseModel):
     context: Context = Field(default_factory=Context)
     run_config: RunConfig = Field(default_factory=RunConfig)
     expectations: list[ExpectationSchema] = Field(default_factory=list)
+    gate: Gate | None = None
+    """Optional gate policy; None when the scenario has no ``gate:`` block (M1 backward-compat)."""
 
     # Set by load_scenario — not in YAML
     scenario_dir: Path = Field(default=Path("."), exclude=True)
 
-    model_config = {"extra": "ignore"}  # ignore gate, baseline, contract, code_gate
+    model_config = {"extra": "ignore"}  # ignore baseline, contract, code_gate
 
     @field_validator("expectations", mode="before")
     @classmethod

@@ -4,6 +4,7 @@ All evaluators implement evaluate(run_result) -> Evaluation.
 They MUST read only run_result.artifact and run_result.trace;
 run_result.raw is adapter-internal and is NEVER read by a judge.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

@@ -1,4 +1,5 @@
 """Tests for deterministic evaluators and StubLlmJudge."""
+
 from __future__ import annotations
 
 import json
@@ -24,6 +25,7 @@ def _make_run_result(text: str = "", structured: dict | None = None) -> RunResul
 
 
 # --- SchemaEvaluator ---
+
 
 def test_schema_evaluator_passes_when_fields_present() -> None:
     rr = _make_run_result(structured={"tasks": [...], "rationale": "because"})
@@ -69,6 +71,7 @@ def test_schema_evaluator_reads_only_artifact_trace() -> None:
 
 # --- ContainsEvaluator ---
 
+
 def test_contains_evaluator_passes_when_match() -> None:
     rr = _make_run_result(text="FastAPI endpoint for /auth/login")
     ev = ContainsEvaluator(any_of=["FastAPI", "Django", "Flask"])
@@ -101,6 +104,7 @@ def test_contains_evaluator_checks_structured_json() -> None:
 
 
 # --- StubLlmJudge ---
+
 
 def test_stub_llm_judge_deterministic_output() -> None:
     """Same input always gives same score (deterministic)."""

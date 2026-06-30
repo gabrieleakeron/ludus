@@ -1,4 +1,5 @@
 """Tests for RunResult / Artifact / Trace Pydantic models (AD4)."""
+
 from __future__ import annotations
 
 import json

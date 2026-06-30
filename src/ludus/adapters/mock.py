@@ -5,6 +5,7 @@ Target key: "mock.architect"
 Reads the golden fixture JSON next to the scenario (resolved via scenario_dir
 or from a well-known default path).  Fully reproducible: no network, no API key.
 """
+
 from __future__ import annotations
 
 import json
