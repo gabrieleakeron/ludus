@@ -4,18 +4,6 @@
 skills. It does not *build* agents; it puts them **to the proof** in a repeatable,
 measurable way, producing scores, pass/fail gates and regression detection.
 
-The pilot use case is evaluating [Sethlans](https://github.com/gabrieleakeron/sethlans),
-a multi-agent Claude Code orchestration plugin.
-
-**Status:** M0 ✅ charter — M1 ✅ walking skeleton — M2 ✅ gates & baseline — M3 CI integration (planned).
-Beyond the roadmap, an **alt-interface** layer has also been delivered: a REST backend
-+ SQLite persistence, a web UI, and an MCP server, so scenarios/runs/baselines can be
-driven from a browser or from Claude instead of only the CLI — see
-[Web UI + REST + MCP](#web-ui--rest--mcp-alt-interface) below. The repo has also been
-**repackaged as a `packages/` monorepo** with an npm-based installer and CI that
-publishes to Docker Hub — see [Repo layout](#repo-layout) and [Install](#install-end-users)
-below.
-
 ---
 
 ## Repo layout
