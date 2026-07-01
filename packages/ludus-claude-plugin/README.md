@@ -8,7 +8,12 @@ backend), and adds convenience slash-commands.
 - `.claude-plugin/plugin.json` — plugin manifest.
 - `.mcp.json` — registers the `ludus` MCP server over **streamable HTTP**
   (default `http://localhost:8765/mcp`).
-- `commands/` — slash-commands: `/ludus-scenarios`, `/ludus-run`, `/ludus-runs`.
+- `commands/` — slash-commands: `/ludus-create-scenario`.
+
+Browsing scenarios, targets and run history is done in the **Ludus board SPA**
+(`packages/ludus-board/frontend/`), which already lists them in tables and lets
+you launch a run from the Scenarios page. Running a scenario from Claude Code
+is done directly via the `run_scenario` MCP tool (no dedicated slash-command).
 
 ## Prerequisites
 
@@ -24,4 +29,5 @@ If you run the MCP server on a different host/port, edit the `url` in `.mcp.json
 ## MCP tools exposed
 
 `list_targets`, `list_scenarios`, `get_scenario`, `create_scenario`,
-`run_scenario`, `list_runs`, `get_run`, `get_baseline`.
+`update_scenario`, `register_target`, `run_scenario`, `list_runs`, `get_run`,
+`get_baseline`.

@@ -21,8 +21,10 @@ ludus up
 ```
 
 After `ludus setup`, open Claude Code and run **`/reload-plugins`** (or restart
-it) so it picks up the newly installed plugin — its commands (`/ludus-scenarios`,
-`/ludus-run`, `/ludus-runs`) and MCP server load on the next session.
+it) so it picks up the newly installed plugin — its command (`/ludus-create-scenario`)
+and MCP server load on the next session. Browsing existing scenarios, targets and
+run history is done in the board SPA (`ludus up`, then http://localhost:8080);
+running a scenario from Claude Code is done via the `run_scenario` MCP tool.
 
 `npm install` runs a best-effort `postinstall` that already performs the
 `setup` step (installing the Claude plugin). Running `ludus setup` again

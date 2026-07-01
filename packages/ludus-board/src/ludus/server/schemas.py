@@ -13,6 +13,18 @@ class TargetOut(BaseModel):
     kind: str = "adapter"
     description: str = ""
     requires_api_key: bool = False
+    runnable: bool = Field(
+        default=False,
+        description="Computed at read time: True iff key is in ludus.adapters._REGISTRY.",
+    )
+
+
+class TargetCreate(BaseModel):
+    """Declare an authoring-only target (kind='declared')."""
+
+    key: str = Field(..., description="Target key, charset [a-z0-9._-]+.")
+    description: str = ""
+    requires_api_key: bool = True
 
 
 class ScenarioOut(BaseModel):

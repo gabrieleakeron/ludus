@@ -31,3 +31,15 @@ def create_scenario(payload: ScenarioCreate, session: Session = Depends(get_sess
         return service.create_scenario(session, payload.yaml_source)
     except service.ServiceError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.put("/{scenario_id}", response_model=ScenarioOut)
+def update_scenario(  # type: ignore[no-untyped-def]
+    scenario_id: str, payload: ScenarioCreate, session: Session = Depends(get_session)
+):
+    try:
+        return service.update_scenario(session, scenario_id, payload.yaml_source)
+    except service.ScenarioNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except service.ServiceError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

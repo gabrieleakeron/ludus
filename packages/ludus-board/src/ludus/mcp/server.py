@@ -17,7 +17,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from ludus.mcp.client import LudusClient
+from ludus.mcp.client import LudusApiError, LudusClient
 
 mcp = FastMCP(
     "ludus",
@@ -28,6 +28,22 @@ mcp = FastMCP(
 
 def _client() -> LudusClient:
     return LudusClient()
+
+
+def _call(fn, *args: Any, **kwargs: Any) -> Any:  # type: ignore[no-untyped-def]
+    """Invoke a client write call, surfacing backend errors as a clean message.
+
+    Converts LudusApiError into a plain RuntimeError so MCP tool callers
+    never see a raw httpx stack trace. The message is passed through as-is:
+    LudusApiError/_format_error already renders a self-describing "Ludus API
+    error (<status>): <detail>" string, so no extra prefix is added here —
+    a bare passthrough avoids mislabeling e.g. a 404/409 as "Validation
+    failed", which previously happened regardless of the actual status.
+    """
+    try:
+        return fn(*args, **kwargs)
+    except LudusApiError as exc:
+        raise RuntimeError(str(exc)) from exc
 
 
 @mcp.tool()
@@ -50,11 +66,42 @@ def get_scenario(scenario_id: str) -> Any:
 
 @mcp.tool()
 def create_scenario(yaml_source: str) -> Any:
-    """Create or update a scenario from a full YAML document.
+    """Create a new scenario from a full YAML document.
 
-    The YAML must contain at least `id`, `target` and `input.prompt_fixture`.
+    The YAML must be a mapping with a safe `id` (matching `[a-z0-9._-]+`);
+    `target` and `input.prompt_fixture` are required as well but are
+    validated separately when the scenario is loaded. Use update_scenario
+    to modify a scenario that already exists.
     """
-    return _client().create_scenario(yaml_source)
+    return _call(_client().create_scenario, yaml_source)
+
+
+@mcp.tool()
+def update_scenario(scenario_id: str, yaml_source: str) -> Any:
+    """Update an existing scenario's YAML in place.
+
+    The YAML's `id` field must match `scenario_id`. Fails with a clear error
+    (404 from the backend) if no scenario with this id exists yet — use
+    create_scenario for that case instead.
+    """
+    return _call(_client().update_scenario, scenario_id, yaml_source)
+
+
+@mcp.tool()
+def register_target(key: str, description: str = "", requires_api_key: bool = True) -> Any:
+    """Declare an authoring-only target so scenarios can reference it.
+
+    This does NOT make the target runnable — it is only usable by scenarios
+    until a matching core adapter is implemented and registered. Declaring a
+    key that already names a runnable adapter fails (the adapter is the
+    source of truth for runnable targets; reference it directly instead).
+    """
+    return _call(
+        _client().register_target,
+        key,
+        description=description,
+        requires_api_key=requires_api_key,
+    )
 
 
 @mcp.tool()

@@ -45,3 +45,77 @@ button:disabled { opacity: 0.5; cursor: default; }
 
 pre { background: #0b0d12; border: 1px solid var(--border); border-radius: 6px; padding: 0.8rem; overflow-x: auto; font-size: 0.8rem; }
 .error { color: var(--fail); }
+
+.icon-btn {
+  background: transparent; color: var(--muted); border: 1px solid var(--border);
+  border-radius: 6px; width: 30px; height: 30px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.icon-btn:hover { color: var(--text); border-color: var(--accent); }
+.icon-btn svg { width: 16px; height: 16px; }
+.row-actions { display: flex; gap: 0.4rem; align-items: center; }
+th.col-actions, td.col-actions { width: 3.5rem; text-align: right; }
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(6, 7, 10, 0.6);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 4vh 1rem; z-index: 50;
+}
+.modal {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  width: 100%; max-width: 640px; max-height: 85vh; display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--border);
+}
+.modal-header h2 { font-size: 1.1rem; margin: 0; display: flex; align-items: center; gap: 0.6rem; }
+.modal-header .modal-sub { font-size: 0.8rem; color: var(--muted); font-weight: 400; }
+.modal-body { padding: 1.1rem; overflow-y: auto; }
+.modal-footer {
+  padding: 0.8rem 1.1rem; border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-footer button.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.modal-footer .footer-link { font-size: 0.8rem; color: var(--muted); }
+
+.section-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); margin: 1.1rem 0 0.5rem; }
+.section-title:first-child { margin-top: 0; }
+
+.kv-grid { display: grid; grid-template-columns: 140px 1fr; gap: 0.5rem 1rem; margin: 0 0 1rem; }
+.kv-grid dt { color: var(--muted); font-size: 0.85rem; padding-top: 0.15rem; }
+.kv-grid dd { margin: 0; }
+
+.exp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.exp-item { border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem 0.7rem; font-size: 0.85rem; }
+.exp-item .exp-type { color: var(--accent); font-weight: 600; margin-right: 0.5rem; }
+.exp-item .exp-detail { color: var(--muted); }
+
+.gate-box { display: flex; gap: 1.5rem; border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem 0.9rem; }
+.gate-box .g { display: flex; flex-direction: column; }
+.gate-box .g .label { font-size: 0.75rem; color: var(--muted); }
+.gate-box .g .val { font-weight: 600; }
+
+.summary-row { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+.summary-row .g { display: flex; flex-direction: column; }
+.summary-row .g .label { font-size: 0.75rem; color: var(--muted); }
+.summary-row .g .val { font-weight: 600; }
+
+.empty-note { color: var(--muted); font-size: 0.85rem; font-style: italic; }
+
+.api-pill { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.75rem; border: 1px solid var(--border); }
+.api-pill.required { color: var(--accent); border-color: var(--accent); }
+.api-pill.keyless { color: var(--muted); }
+
+.meta-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.meta-table td { padding: 0.35rem 0; border-bottom: 1px solid var(--border); }
+.meta-table td:first-child { color: var(--muted); width: 45%; }
+
+.skeleton {
+  height: 0.9rem; background: linear-gradient(90deg, var(--border), #343a48, var(--border));
+  background-size: 200% 100%; animation: skeleton-shimmer 1.3s infinite;
+  border-radius: 4px; margin-bottom: 0.6rem;
+}
+@keyframes skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }

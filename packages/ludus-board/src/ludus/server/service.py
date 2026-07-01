@@ -6,6 +6,7 @@ and persists. No evaluation/aggregation logic is reimplemented here.
 
 from __future__ import annotations
 
+import re
 import tempfile
 from pathlib import Path
 
@@ -27,11 +28,24 @@ from ludus.server.db_models import (
     RunRow,
     ScenarioRow,
     TargetRow,
+    _utcnow,
 )
 
 
 class ServiceError(Exception):
     """Raised for user-facing service errors (mapped to HTTP 400/404)."""
+
+
+class TargetConflictError(ServiceError):
+    """Raised when declaring a target key that already exists as a runnable adapter."""
+
+
+class ScenarioNotFoundError(ServiceError):
+    """Raised when an operation requires an existing scenario that is missing."""
+
+
+_TARGET_KEY_RE = re.compile(r"^[a-z0-9._-]+$")
+_SCENARIO_ID_RE = re.compile(r"^[a-z0-9._-]+$")
 
 
 # --------------------------------------------------------------------------
@@ -40,9 +54,14 @@ class ServiceError(Exception):
 
 
 def seed_targets(session: Session) -> None:
-    """Populate the targets table from the adapter registry (idempotent)."""
+    """Populate the targets table from the adapter registry (idempotent).
+
+    Declared (authoring-only) rows are never clobbered, except that a declared
+    key which now appears in the registry is promoted to kind="adapter".
+    """
     for key in sorted(_REGISTRY):
-        if session.get(TargetRow, key) is None:
+        row = session.get(TargetRow, key)
+        if row is None:
             session.add(
                 TargetRow(
                     key=key,
@@ -52,7 +71,56 @@ def seed_targets(session: Session) -> None:
                     requires_api_key=not key.startswith("mock."),
                 )
             )
+        elif row.kind == "declared":
+            row.kind = "adapter"
     session.commit()
+
+
+# --------------------------------------------------------------------------
+# Targets
+# --------------------------------------------------------------------------
+
+
+def register_target(
+    session: Session,
+    *,
+    key: str,
+    description: str = "",
+    requires_api_key: bool = True,
+) -> tuple[TargetRow, bool]:
+    """Declare an authoring-only target (kind="declared").
+
+    Idempotent: re-declaring the same key updates description/requires_api_key
+    and returns the existing row. Raises TargetConflictError if the key is
+    already a runnable adapter (kind="adapter"); raises ServiceError if the
+    key fails charset validation.
+
+    Returns (row, created) so the router's 201-vs-200 decision has a single
+    source of truth instead of re-querying the table before calling in
+    (which could drift out of sync with the seed_targets() call below).
+    """
+    seed_targets(session)
+
+    normalized = key.strip()
+    if not normalized or not _TARGET_KEY_RE.fullmatch(normalized):
+        raise ServiceError(f"Invalid target key '{key}': must be non-empty and match [a-z0-9._-]+.")
+
+    row = session.get(TargetRow, normalized)
+    if row is not None and row.kind == "adapter":
+        raise TargetConflictError(
+            f"Target '{normalized}' already exists as a runnable adapter; reference it directly."
+        )
+
+    created = row is None
+    if row is None:
+        row = TargetRow(key=normalized, kind="declared")
+        session.add(row)
+
+    row.description = description
+    row.requires_api_key = requires_api_key
+    session.commit()
+    session.refresh(row)
+    return row, created
 
 
 def seed_scenarios(session: Session) -> None:
@@ -106,11 +174,14 @@ def _upsert_scenario_row(
     return row
 
 
-def create_scenario(session: Session, yaml_source: str) -> ScenarioRow:
-    """Validate raw scenario YAML, persist it to disk, and upsert the DB row.
+def _parse_scenario_yaml(yaml_source: str) -> dict:
+    """Parse+validate raw scenario YAML text; return the raw mapping.
 
-    The YAML is written to ``<scenarios_dir>/<id>.yaml`` so that relative
-    fixture/rubric paths keep resolving exactly as the CLI expects.
+    Raises ServiceError if the YAML is malformed, lacks an 'id' field, or the
+    'id' fails the safe-charset check (mirrors _TARGET_KEY_RE — this is the
+    single choke point for both create_scenario and update_scenario, so the
+    filesystem-writing path in _write_and_upsert_scenario never sees an id
+    that could escape scenarios_dir, e.g. "../evil" or "foo/bar").
     """
     try:
         raw = yaml.safe_load(yaml_source)
@@ -118,16 +189,38 @@ def create_scenario(session: Session, yaml_source: str) -> ScenarioRow:
         raise ServiceError(f"Invalid YAML: {exc}") from exc
     if not isinstance(raw, dict) or "id" not in raw:
         raise ServiceError("Scenario YAML must be a mapping with an 'id' field.")
+    scenario_id = raw["id"]
+    if not isinstance(scenario_id, str) or not _SCENARIO_ID_RE.fullmatch(scenario_id):
+        raise ServiceError(
+            f"Invalid scenario id {scenario_id!r}: must be non-empty and match [a-z0-9._-]+."
+        )
+    return raw
 
+
+def _write_and_upsert_scenario(session: Session, yaml_source: str, raw: dict) -> ScenarioRow:
+    """Write validated scenario YAML to disk and upsert its DB row.
+
+    Shared by create_scenario and update_scenario so the two paths cannot diverge.
+    """
     settings = get_settings()
     settings.ensure_dirs()
+    scenarios_dir = settings.scenarios_dir.resolve()
     dest = settings.scenarios_dir / f"{raw['id']}.yaml"
+    resolved_dest = dest.resolve()
+    if resolved_dest.parent != scenarios_dir:
+        # Defense-in-depth: _parse_scenario_yaml already enforces a safe
+        # charset on raw["id"], so this should be unreachable in practice.
+        raise ServiceError(f"Invalid scenario id {raw['id']!r}: resolves outside scenarios_dir.")
+    previous = dest.read_text(encoding="utf-8") if dest.exists() else None
     dest.write_text(yaml_source, encoding="utf-8")
 
     try:
         scenario = load_scenario(dest)
     except ScenarioError as exc:
-        dest.unlink(missing_ok=True)
+        if previous is None:
+            dest.unlink(missing_ok=True)
+        else:
+            dest.write_text(previous, encoding="utf-8")
         raise ServiceError(str(exc)) from exc
 
     row = _upsert_scenario_row(
@@ -139,9 +232,37 @@ def create_scenario(session: Session, yaml_source: str) -> ScenarioRow:
         source_path=str(dest),
         yaml_source=yaml_source,
     )
+    row.updated_at = _utcnow()
     session.commit()
     session.refresh(row)
     return row
+
+
+def create_scenario(session: Session, yaml_source: str) -> ScenarioRow:
+    """Validate raw scenario YAML, persist it to disk, and upsert the DB row.
+
+    The YAML is written to ``<scenarios_dir>/<id>.yaml`` so that relative
+    fixture/rubric paths keep resolving exactly as the CLI expects.
+    """
+    raw = _parse_scenario_yaml(yaml_source)
+    return _write_and_upsert_scenario(session, yaml_source, raw)
+
+
+def update_scenario(session: Session, scenario_id: str, yaml_source: str) -> ScenarioRow:
+    """Update an existing scenario's YAML in place.
+
+    Raises ServiceError (->400) on invalid YAML or a path/id mismatch, and
+    ScenarioNotFoundError (->404) if the scenario does not already exist.
+    Reuses the same disk-write + load_scenario validation as create_scenario.
+    """
+    raw = _parse_scenario_yaml(yaml_source)
+    if raw["id"] != scenario_id:
+        raise ServiceError(
+            f"Scenario id in YAML ('{raw['id']}') does not match path id ('{scenario_id}')."
+        )
+    if session.get(ScenarioRow, scenario_id) is None:
+        raise ScenarioNotFoundError(f"Scenario '{scenario_id}' not found; use POST to create.")
+    return _write_and_upsert_scenario(session, yaml_source, raw)
 
 
 def list_scenarios(session: Session) -> list[ScenarioRow]:
@@ -312,7 +433,9 @@ def get_baseline_row(session: Session, scenario_id: str) -> BaselineRow | None:
 
 
 __all__ = [
+    "ScenarioNotFoundError",
     "ServiceError",
+    "TargetConflictError",
     "create_scenario",
     "execute_run",
     "get_baseline_row",
@@ -320,6 +443,8 @@ __all__ = [
     "get_scenario",
     "list_runs",
     "list_scenarios",
+    "register_target",
     "seed_scenarios",
     "seed_targets",
+    "update_scenario",
 ]

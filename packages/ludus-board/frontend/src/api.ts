@@ -9,6 +9,7 @@ export interface Target {
   kind: string;
   description: string;
   requires_api_key: boolean;
+  runnable: boolean;
 }
 
 export interface Scenario {
@@ -66,6 +67,7 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
 export const api = {
   health: () => req<{ status: string; ludus_version: string }>("GET", "/health"),
   listTargets: () => req<Target[]>("GET", "/targets"),
+  getTarget: (key: string) => req<Target>("GET", `/targets/${encodeURIComponent(key)}`),
   listScenarios: () => req<Scenario[]>("GET", "/scenarios"),
   getScenario: (id: string) => req<Scenario>("GET", `/scenarios/${id}`),
   listRuns: (scenarioId?: string) =>
