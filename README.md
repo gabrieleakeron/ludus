@@ -6,7 +6,7 @@ measurable way, producing scores, pass/fail gates and regression detection.
 
 ---
 
-## Install (end users)
+## Install
 
 Requires [Node.js](https://nodejs.org/) ≥ 18 and [Docker](https://docs.docker.com/get-docker/)
 with Compose v2. No Python setup needed — the board runs as prebuilt Docker containers.
@@ -25,35 +25,6 @@ ludus up      # pulls gabrieleconsonni/ludus-* images from Docker Hub and starts
 
 `ludus down` stops the board's containers; `ludus status` shows their state. See
 [`packages/ludus/README.md`](packages/ludus/README.md) for the full CLI reference.
-
----
-
-## For contributors
-
-The Python eval framework lives in `packages/ludus-board`. From there:
-
-```bash
-cd packages/ludus-board
-
-# editable install with dev dependencies (pytest, ruff)
-pip install -e ".[dev]"
-```
-
-Optional extras (only needed for live adapters):
-
-| Extra | Installs | When you need it |
-|---|---|---|
-| `llm` | `anthropic` | Real `llm_judge` evaluator against the Anthropic API |
-| `level-a` | `anthropic` + `claude-agent-sdk` | Level-A `SingleSubagentAdapter` (live Sethlans agent) |
-
-```bash
-pip install -e ".[dev,llm]"        # add the real LLM judge
-pip install -e ".[dev,llm,level-a]"  # add the live Level-A adapter
-```
-
-The repo uses **uv**: prefix commands with `uv run` to run inside the managed
-virtualenv without activating it. Run these commands from inside `packages/ludus-board`,
-not from the repo root.
 
 ---
 
@@ -257,6 +228,35 @@ uv run pytest          # run the test suite
 uv run ruff check .    # lint
 uv run ruff format .   # format
 ```
+
+---
+
+## For contributors
+
+The Python eval framework lives in `packages/ludus-board`. From there:
+
+```bash
+cd packages/ludus-board
+
+# editable install with dev dependencies (pytest, ruff)
+pip install -e ".[dev]"
+```
+
+Optional extras (only needed for live adapters):
+
+| Extra | Installs | When you need it |
+|---|---|---|
+| `llm` | `anthropic` | Real `llm_judge` evaluator against the Anthropic API |
+| `level-a` | `anthropic` + `claude-agent-sdk` | Level-A `SingleSubagentAdapter` (live Sethlans agent) |
+
+```bash
+pip install -e ".[dev,llm]"        # add the real LLM judge
+pip install -e ".[dev,llm,level-a]"  # add the live Level-A adapter
+```
+
+The repo uses **uv**: prefix commands with `uv run` to run inside the managed
+virtualenv without activating it. Run these commands from inside `packages/ludus-board`,
+not from the repo root.
 
 ---
 
