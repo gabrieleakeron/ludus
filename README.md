@@ -6,23 +6,6 @@ measurable way, producing scores, pass/fail gates and regression detection.
 
 ---
 
-## Repo layout
-
-This repository is a **monorepo** under `packages/`:
-
-| Package | What it is |
-|---|---|
-| [`packages/ludus`](packages/ludus) | The end-user **npm installer CLI** (`ludus setup` / `up` / `down` / `status`) — installs the Claude plugin and runs the board from Docker Hub images. |
-| [`packages/ludus-board`](packages/ludus-board) | **The app**: the Python eval framework (core harness + CLI) plus the alt-interface (FastAPI backend, MCP server, React frontend) and their Dockerfiles. This is where you develop. |
-| [`packages/ludus-claude-plugin`](packages/ludus-claude-plugin) | The Claude plugin manifest + slash-commands, bundled into the npm package at publish time. |
-
-CI lives in `.github/workflows/`: `release.yml` publishes the `ludus` npm tarball on
-`v*` tags, and `board-images.yml` publishes the three Docker Hub images
-(`gabrieleconsonni/ludus-server`, `gabrieleconsonni/ludus-board`, `gabrieleconsonni/ludus-mcp`)
-on `board-v*` tags.
-
----
-
 ## Install (end users)
 
 Requires [Node.js](https://nodejs.org/) ≥ 18 and [Docker](https://docs.docker.com/get-docker/)
@@ -274,3 +257,16 @@ uv run pytest          # run the test suite
 uv run ruff check .    # lint
 uv run ruff format .   # format
 ```
+
+---
+
+## Repo layout
+
+This repository is a **monorepo** under `packages/`:
+
+| Package | What it is |
+|---|---|
+| [`packages/ludus`](packages/ludus) | The end-user **npm installer CLI** (`ludus setup` / `up` / `down` / `status`) — installs the Claude plugin and runs the board from Docker Hub images. |
+| [`packages/ludus-board`](packages/ludus-board) | **The app**: the Python eval framework (core harness + CLI) plus the alt-interface (FastAPI backend, MCP server, React frontend) and their Dockerfiles. This is where you develop. |
+| [`packages/ludus-claude-plugin`](packages/ludus-claude-plugin) | The Claude plugin manifest + slash-commands, bundled into the npm package at publish time. |
+
