@@ -91,3 +91,52 @@ class BaselineOut(BaseModel):
     n: int
     timestamp: str
     ludus_version: str
+
+
+# --------------------------------------------------------------------------
+# Fixtures (story s6886e332 / task tcbec12d4) — see the story's `## API
+# Contract` section for the authoritative shapes; these mirror it 1:1.
+# --------------------------------------------------------------------------
+
+
+class FixtureRefOut(BaseModel):
+    root: str  # "fixtures" | "rubrics"
+    path: str  # relative to root, forward-slash
+    role: str  # "prompt_fixture" | "context_files" | "rubric"
+    scenario_id: str
+    present: bool
+    size_bytes: int | None = None
+    is_binary: bool | None = None
+    content_type: str | None = None
+
+
+class FixtureUsedByOut(BaseModel):
+    scenario_id: str
+    role: str
+
+
+class FixtureContentOut(BaseModel):
+    root: str
+    path: str
+    present: bool
+    size_bytes: int | None = None
+    is_binary: bool = False
+    truncated: bool = False
+    content: str | None = None
+    content_type: str | None = None
+    used_by: list[FixtureUsedByOut] = Field(default_factory=list)
+
+
+class FixtureUploadOut(BaseModel):
+    root: str
+    path: str
+    size_bytes: int
+    created: bool
+
+
+class FixtureConfigOut(BaseModel):
+    roots: list[str]
+    preview_max_bytes: int
+    upload_max_bytes: int
+    text_extensions: list[str]
+    upload_extensions: list[str]

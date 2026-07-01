@@ -24,11 +24,16 @@ level-a = [
     "claude-agent-sdk>=0.0.1",
 ]
 # Backend REST API (FastAPI + SQLModel/SQLite). See src/ludus/server/.
+# python-multipart is required at import time by the fixtures router's
+# multipart upload endpoint (FastAPI's Form/UploadFile) — must be declared
+# here explicitly, not left to arrive transitively via the `mcp` extra,
+# since the backend Docker image installs `.[server]` only.
 server = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
     "sqlmodel>=0.0.16",
     "httpx>=0.27",
+    "python-multipart>=0.0.9",
 ]
 # MCP server exposing the backend over streamable HTTP. See src/ludus/mcp/.
 mcp = [

@@ -34,14 +34,24 @@ class Settings:
             os.environ.get("LUDUS_BASELINES_DIR", str(self.repo_root / "baselines"))
         )
 
+        # Where scenario fixture files live / are uploaded to (AD3/AD4, fixtures feature).
+        self.fixtures_dir: Path = Path(
+            os.environ.get("LUDUS_FIXTURES_DIR", str(self.repo_root / "fixtures"))
+        )
+
+        # Where rubric files live / are uploaded to (AD3/AD4, fixtures feature).
+        self.rubrics_dir: Path = Path(
+            os.environ.get("LUDUS_RUBRICS_DIR", str(self.repo_root / "rubrics"))
+        )
+
         # CORS origins for the SPA (comma-separated). "*" allows any.
         self.cors_origins: list[str] = [
             o.strip() for o in os.environ.get("LUDUS_CORS_ORIGINS", "*").split(",") if o.strip()
         ]
 
     def ensure_dirs(self) -> None:
-        """Create data/scenarios/baselines directories if missing."""
-        for p in (self.scenarios_dir, self.baselines_dir):
+        """Create data/scenarios/baselines/fixtures/rubrics directories if missing."""
+        for p in (self.scenarios_dir, self.baselines_dir, self.fixtures_dir, self.rubrics_dir):
             p.mkdir(parents=True, exist_ok=True)
         if self.database_url.startswith("sqlite:///"):
             db_path = Path(self.database_url.removeprefix("sqlite:///"))

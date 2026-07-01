@@ -15,7 +15,7 @@ from sqlmodel import Session
 
 from ludus.server.config import get_settings
 from ludus.server.db import create_db_and_tables, engine
-from ludus.server.routers import baselines, health, runs, scenarios, targets
+from ludus.server.routers import baselines, fixtures, health, runs, scenarios, targets
 from ludus.server.service import seed_scenarios, seed_targets
 
 
@@ -23,6 +23,7 @@ from ludus.server.service import seed_scenarios, seed_targets
 async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
     """Create tables and seed targets/scenarios on startup."""
     create_db_and_tables()
+    get_settings().ensure_dirs()
     with Session(engine) as session:
         seed_targets(session)
         seed_scenarios(session)
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(targets.router)
     app.include_router(scenarios.router)
+    app.include_router(fixtures.router)
     app.include_router(runs.router)
     app.include_router(baselines.router)
     return app

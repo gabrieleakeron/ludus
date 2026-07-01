@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, type Scenario } from "../api";
+import { api, type FixtureRef, type FixtureRoot, type FixtureUsedBy, type Scenario } from "../api";
 import DetailModal from "../components/DetailModal";
 import EyeIcon from "../components/EyeIcon";
+import FixturePreviewModal from "../components/FixturePreviewModal";
+import FixtureUploadDialog from "../components/FixtureUploadDialog";
+import UploadIcon from "../components/UploadIcon";
 
 interface ParsedExpectation {
   type: string;
@@ -112,9 +115,36 @@ export default function Scenarios() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string>();
 
+  // --- Fixtures (story s6886e332): list/preview/upload state for the open scenario ---
+  const [fixtures, setFixtures] = useState<FixtureRef[]>();
+  const [fixturesError, setFixturesError] = useState<string>();
+  const [previewTarget, setPreviewTarget] = useState<{ root: FixtureRoot; path: string }>();
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [replaceTarget, setReplaceTarget] = useState<
+    { root: FixtureRoot; path: string; usedBy: FixtureUsedBy[] } | undefined
+  >(undefined);
+
   useEffect(() => {
     api.listScenarios().then(setScenarios).catch((e) => setError(String(e)));
   }, []);
+
+  function loadFixtures(scenarioId: string) {
+    setFixturesError(undefined);
+    api
+      .listScenarioFixtures(scenarioId)
+      .then(setFixtures)
+      .catch((e) => setFixturesError(String(e)));
+  }
+
+  function openReplace(ref: FixtureRef) {
+    api
+      .getFixtureContent(ref.root, ref.path)
+      .then((content) =>
+        setReplaceTarget({ root: ref.root, path: ref.path, usedBy: content.used_by }),
+      )
+      .catch(() => setReplaceTarget({ root: ref.root, path: ref.path, usedBy: [] }));
+    setUploadOpen(true);
+  }
 
   async function run(s: Scenario) {
     setRunning(s.id);
@@ -134,15 +164,18 @@ export default function Scenarios() {
     setDetail(undefined);
     setDetailError(undefined);
     setDetailLoading(true);
+    setFixtures(undefined);
     api
       .getScenario(s.id)
       .then(setDetail)
       .catch((e) => setDetailError(String(e)))
       .finally(() => setDetailLoading(false));
+    loadFixtures(s.id);
   }
 
   function closeDetail() {
     setSelectedId(undefined);
+    setFixtures(undefined);
   }
 
   const parsed = detail?.yaml_source ? parseExpectationsAndGate(detail.yaml_source) : { expectations: null, gate: null };
@@ -198,6 +231,63 @@ export default function Scenarios() {
               <dt>Description</dt><dd>{detail.description}</dd>
             </dl>
 
+            <div className="section-title">Fixtures{fixtures ? ` (${fixtures.length})` : ""}</div>
+            {fixturesError && <p className="error">{fixturesError}</p>}
+            {!fixturesError && !fixtures && <p className="empty-note">Loading fixtures…</p>}
+            {!fixturesError && fixtures && fixtures.length === 0 && (
+              <p className="empty-note">This scenario does not reference any fixtures.</p>
+            )}
+            {!fixturesError && fixtures && fixtures.length > 0 && (
+              <ul className="fixture-list">
+                {fixtures.map((f, i) => (
+                  <li className={`fixture-item${f.present ? "" : " missing"}`} key={i}>
+                    <span className="fixture-role">{f.role}</span>
+                    <span className="fixture-path">{f.root}/{f.path}</span>
+                    <span className="fixture-meta">
+                      {f.present
+                        ? `${f.size_bytes !== null && f.size_bytes < 1024 ? `${f.size_bytes} B` : f.size_bytes !== null ? `${(f.size_bytes / 1024).toFixed(1)} KB` : "—"}${f.content_type ? ` · ${f.content_type}` : ""}`
+                        : "—"}
+                    </span>
+                    <span className={`badge ${f.present ? "pass" : "fail"}`}>
+                      {f.present ? "present" : "missing"}
+                    </span>
+                    <div className="fixture-actions">
+                      {f.present ? (
+                        <>
+                          <button
+                            className="icon-btn"
+                            title="Preview"
+                            onClick={() => setPreviewTarget({ root: f.root, path: f.path })}
+                          >
+                            <EyeIcon />
+                          </button>
+                          <button className="icon-btn" title="Replace" onClick={() => openReplace(f)}>
+                            <UploadIcon />
+                          </button>
+                        </>
+                      ) : (
+                        <button title="Upload" onClick={() => openReplace(f)}>
+                          Upload…
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div style={{ marginTop: "0.7rem" }}>
+              <button
+                className="secondary"
+                style={{ background: "transparent", color: "var(--text)", border: "1px solid var(--border)" }}
+                onClick={() => {
+                  setReplaceTarget(undefined);
+                  setUploadOpen(true);
+                }}
+              >
+                + Add fixture
+              </button>
+            </div>
+
             {parsed.expectations && (
               <>
                 <div className="section-title">Expectations</div>
@@ -242,6 +332,28 @@ export default function Scenarios() {
           </>
         )}
       </DetailModal>
+
+      <FixturePreviewModal
+        open={previewTarget !== undefined}
+        root={previewTarget?.root}
+        path={previewTarget?.path}
+        onClose={() => setPreviewTarget(undefined)}
+        onUpload={(root, path) => {
+          setPreviewTarget(undefined);
+          setReplaceTarget({ root, path, usedBy: [] });
+          setUploadOpen(true);
+        }}
+      />
+
+      <FixtureUploadDialog
+        open={uploadOpen}
+        scenarioId={selectedId ?? ""}
+        replaceTarget={replaceTarget}
+        onClose={() => setUploadOpen(false)}
+        onUploaded={() => {
+          if (selectedId) loadFixtures(selectedId);
+        }}
+      />
     </div>
   );
 }
