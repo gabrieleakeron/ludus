@@ -7,7 +7,11 @@ measurable way, producing scores, pass/fail gates and regression detection.
 The pilot use case is evaluating [Sethlans](https://github.com/gabrieleakeron/sethlans),
 a multi-agent Claude Code orchestration plugin.
 
-**Status:** M0 ✅ charter — M1 ✅ walking skeleton — M2 ✅ gates & baseline — M3 CI integration (planned)
+**Status:** M0 ✅ charter — M1 ✅ walking skeleton — M2 ✅ gates & baseline — M3 CI integration (planned).
+Beyond the roadmap, an **alt-interface** layer has also been delivered: a REST backend
++ SQLite persistence, a web UI, and an MCP server, so scenarios/runs/baselines can be
+driven from a browser or from Claude instead of only the CLI — see
+[Web UI + REST + MCP](#web-ui--rest--mcp-alt-interface) below.
 
 ---
 
@@ -168,6 +172,52 @@ Full documentation lives in the **[project wiki](../../wiki)**. Suggested readin
 6. [Roadmap](../../wiki/Roadmap) — M0–M5 milestones
 
 The full design model is documented in the [wiki](../../wiki) (see [Architecture](../../wiki/Architecture)).
+
+---
+
+## Web UI + REST + MCP (alt-interface)
+
+Alongside the CLI, Ludus ships an **alternative interface stack** that reuses the same
+core (`Harness`/`Adapters`/`Evaluators`/`Gate`/`Baseline`) behind a web UI, a REST API,
+and an MCP server — so scenarios, runs and baselines can be driven from a browser or
+from a Claude plugin instead of only `ludus run`. The core itself is unmodified; these
+are additive layers. Full detail (architecture diagram, data model, endpoint-by-endpoint
+description, "out of scope" list): [`docs/alt-interface.md`](docs/alt-interface.md) and
+the wiki [Alt-Interface](../../wiki/Alt-Interface) page.
+
+### Quickstart (Docker)
+
+```bash
+cp .env.example .env      # optional: set ANTHROPIC_API_KEY to enable live adapters
+docker compose up --build
+```
+
+| Service | URL |
+|---|---|
+| Frontend (React SPA) | http://localhost:8080 |
+| Backend (FastAPI, OpenAPI at `/docs`) | http://localhost:8000 |
+| MCP server (streamable HTTP) | http://localhost:8765/mcp |
+
+Data (SQLite + baselines) persists across restarts in the `ludus-data` Docker volume.
+
+### REST surface
+
+The backend exposes scenarios, runs and baselines over REST (`/health`, `/targets`,
+`/scenarios`, `/scenarios/{id}`, `/runs`, `/runs/{id}`, `/baselines/{scenario_id}`) and
+executes runs by calling `Harness.run()` in-process. See
+[`docs/alt-interface.md`](docs/alt-interface.md#api-rest) for the full table, or the
+live OpenAPI docs at `http://localhost:8000/docs` once the backend is running. An MCP
+server exposes the same operations as tools (1:1 proxies over the REST API via `httpx`)
+for use from a Claude plugin.
+
+### Local dev (without Docker)
+
+```bash
+uv pip install -e ".[server,mcp]"
+uv run uvicorn ludus.server.main:app --reload        # backend  :8000
+uv run ludus-mcp                                      # MCP      :8765 (LUDUS_API_URL=http://localhost:8000)
+cd frontend && npm install && npm run dev             # frontend :5173 (proxies /api → :8000)
+```
 
 ---
 
