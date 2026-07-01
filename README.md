@@ -11,15 +11,59 @@ a multi-agent Claude Code orchestration plugin.
 Beyond the roadmap, an **alt-interface** layer has also been delivered: a REST backend
 + SQLite persistence, a web UI, and an MCP server, so scenarios/runs/baselines can be
 driven from a browser or from Claude instead of only the CLI — see
-[Web UI + REST + MCP](#web-ui--rest--mcp-alt-interface) below.
+[Web UI + REST + MCP](#web-ui--rest--mcp-alt-interface) below. The repo has also been
+**repackaged as a `packages/` monorepo** with an npm-based installer and CI that
+publishes to Docker Hub — see [Repo layout](#repo-layout) and [Install](#install-end-users)
+below.
 
 ---
 
-## Install
+## Repo layout
 
-Requires **Python ≥ 3.11** and [uv](https://docs.astral.sh/uv/) (recommended) or pip.
+This repository is a **monorepo** under `packages/`:
+
+| Package | What it is |
+|---|---|
+| [`packages/ludus`](packages/ludus) | The end-user **npm installer CLI** (`ludus setup` / `up` / `down` / `status`) — installs the Claude plugin and runs the board from Docker Hub images. |
+| [`packages/ludus-board`](packages/ludus-board) | **The app**: the Python eval framework (core harness + CLI) plus the alt-interface (FastAPI backend, MCP server, React frontend) and their Dockerfiles. This is where you develop. |
+| [`packages/ludus-claude-plugin`](packages/ludus-claude-plugin) | The Claude plugin manifest + slash-commands, bundled into the npm package at publish time. |
+
+CI lives in `.github/workflows/`: `release.yml` publishes the `ludus` npm tarball on
+`v*` tags, and `board-images.yml` publishes the three Docker Hub images
+(`gabrieleconsonni/ludus-server`, `gabrieleconsonni/ludus-board`, `gabrieleconsonni/ludus-mcp`)
+on `board-v*` tags.
+
+---
+
+## Install (end users)
+
+Requires [Node.js](https://nodejs.org/) ≥ 18 and [Docker](https://docs.docker.com/get-docker/)
+with Compose v2. No Python setup needed — the board runs as prebuilt Docker containers.
 
 ```bash
+npm install -g https://github.com/gabrieleakeron/ludus/releases/latest/download/ludus-latest.tgz
+ludus setup   # installs the Claude plugin into ~/.claude/plugins/ludus
+ludus up      # pulls gabrieleconsonni/ludus-* images from Docker Hub and starts the board
+```
+
+| Service | URL |
+|---|---|
+| Frontend (React SPA) | http://localhost:8080 |
+| Backend (FastAPI, OpenAPI at `/docs`) | http://localhost:8000 |
+| MCP server (streamable HTTP) | http://localhost:8765/mcp |
+
+`ludus down` stops the board's containers; `ludus status` shows their state. See
+[`packages/ludus/README.md`](packages/ludus/README.md) for the full CLI reference.
+
+---
+
+## For contributors
+
+The Python eval framework lives in `packages/ludus-board`. From there:
+
+```bash
+cd packages/ludus-board
+
 # editable install with dev dependencies (pytest, ruff)
 pip install -e ".[dev]"
 ```
@@ -37,17 +81,19 @@ pip install -e ".[dev,llm,level-a]"  # add the live Level-A adapter
 ```
 
 The repo uses **uv**: prefix commands with `uv run` to run inside the managed
-virtualenv without activating it.
+virtualenv without activating it. Run these commands from inside `packages/ludus-board`,
+not from the repo root.
 
 ---
 
-## Quickstart
+## Quickstart (from `packages/ludus-board`)
 
 The bundled scenario uses the `mock.architect` target — no API key required.
 
 ### Plain report (no gate check)
 
 ```bash
+cd packages/ludus-board
 uv run ludus run scenarios/architect/breakdown-login.yaml --no-gate
 ```
 
@@ -90,7 +136,7 @@ Output:
 ### With gate check (demonstrates M2 gate behavior)
 
 ```bash
-uv run ludus run scenarios/architect/breakdown-login.yaml
+uv run ludus run scenarios/architect/breakdown-login.yaml   # still from packages/ludus-board
 echo "Exit code: $?"
 ```
 
@@ -181,13 +227,19 @@ Alongside the CLI, Ludus ships an **alternative interface stack** that reuses th
 core (`Harness`/`Adapters`/`Evaluators`/`Gate`/`Baseline`) behind a web UI, a REST API,
 and an MCP server — so scenarios, runs and baselines can be driven from a browser or
 from a Claude plugin instead of only `ludus run`. The core itself is unmodified; these
-are additive layers. Full detail (architecture diagram, data model, endpoint-by-endpoint
-description, "out of scope" list): [`docs/alt-interface.md`](docs/alt-interface.md) and
-the wiki [Alt-Interface](../../wiki/Alt-Interface) page.
+are additive layers, all living in `packages/ludus-board`. Full detail (architecture
+diagram, data model, endpoint-by-endpoint description, "out of scope" list):
+[`packages/ludus-board/docs/alt-interface.md`](packages/ludus-board/docs/alt-interface.md)
+and the wiki [Alt-Interface](../../wiki/Alt-Interface) page.
 
-### Quickstart (Docker)
+End users normally get this stack via `ludus up` (see [Install](#install-end-users)
+above), which pulls the prebuilt `gabrieleconsonni/ludus-*` images from Docker Hub.
+The sections below are for **contributors** building the stack locally instead.
+
+### Quickstart (Docker, local build)
 
 ```bash
+cd packages/ludus-board
 cp .env.example .env      # optional: set ANTHROPIC_API_KEY to enable live adapters
 docker compose up --build
 ```
@@ -199,20 +251,24 @@ docker compose up --build
 | MCP server (streamable HTTP) | http://localhost:8765/mcp |
 
 Data (SQLite + baselines) persists across restarts in the `ludus-data` Docker volume.
+This compose file (`packages/ludus-board/docker-compose.yml`) **builds** the three
+images from source — it is the contributor path. The end-user path is the pull-based
+compose bundled with the `packages/ludus` npm installer (no local build).
 
 ### REST surface
 
 The backend exposes scenarios, runs and baselines over REST (`/health`, `/targets`,
 `/scenarios`, `/scenarios/{id}`, `/runs`, `/runs/{id}`, `/baselines/{scenario_id}`) and
 executes runs by calling `Harness.run()` in-process. See
-[`docs/alt-interface.md`](docs/alt-interface.md#api-rest) for the full table, or the
-live OpenAPI docs at `http://localhost:8000/docs` once the backend is running. An MCP
-server exposes the same operations as tools (1:1 proxies over the REST API via `httpx`)
-for use from a Claude plugin.
+[`packages/ludus-board/docs/alt-interface.md`](packages/ludus-board/docs/alt-interface.md#api-rest)
+for the full table, or the live OpenAPI docs at `http://localhost:8000/docs` once the
+backend is running. An MCP server exposes the same operations as tools (1:1 proxies
+over the REST API via `httpx`) for use from a Claude plugin.
 
 ### Local dev (without Docker)
 
 ```bash
+cd packages/ludus-board
 uv pip install -e ".[server,mcp]"
 uv run uvicorn ludus.server.main:app --reload        # backend  :8000
 uv run ludus-mcp                                      # MCP      :8765 (LUDUS_API_URL=http://localhost:8000)
@@ -222,6 +278,8 @@ cd frontend && npm install && npm run dev             # frontend :5173 (proxies 
 ---
 
 ## Development
+
+From `packages/ludus-board`:
 
 ```bash
 uv run pytest          # run the test suite

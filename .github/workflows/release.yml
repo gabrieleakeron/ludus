@@ -1,0 +1,87 @@
+name: Release
+
+# Pushing a tag like `v0.1.0` builds the `ludus` CLI tarball and attaches it
+# to a GitHub Release. End users then download the asset and install it with npm:
+#
+#   npm install -g ludus-<version>.tgz
+#   ludus setup
+#
+# `npm pack` runs the package's `prepack` (bundle-plugin.js), which copies the
+# sibling `ludus-claude-plugin/` sources into the package before packing — so
+# the tarball is self-contained. There is no "preview" app to bundle: the
+# board (backend/frontend/mcp) is pulled from Docker Hub images at `setup`
+# time, not built into the tarball.
+# `postinstall` does NOT run during pack, only on the user's `npm install`.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # required to create the release and upload the asset
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full repo — prepack needs the sibling packages)
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Sync package version to the tag (strip leading "v")
+        working-directory: packages/ludus
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+
+      - name: "Build tarball (runs prepack: bundle plugin)"
+        working-directory: packages/ludus
+        run: npm pack
+
+      - name: Sanity check — install the tarball and run the CLI
+        working-directory: packages/ludus
+        # --ignore-scripts skips the postinstall (which just copies the Claude
+        # plugin into ~/.claude): the check is only that the tarball installs and
+        # the bin runs. A non-zero exit fails the release before any asset is
+        # published.
+        run: |
+          npm install -g --ignore-scripts ./ludus-*.tgz
+          ludus --version
+          ludus --help
+
+      - name: Duplicate the tarball as ludus-latest.tgz (stable download URL)
+        working-directory: packages/ludus
+        # Done AFTER the sanity check so the `./ludus-*.tgz` glob above still
+        # matches a single file. The versioned tarball keeps its tag-derived
+        # name; `ludus-latest.tgz` is a copy with a fixed name so that
+        # `npm install -g ludus-latest.tgz` always points at the newest release.
+        run: cp ludus-*.tgz ludus-latest.tgz
+
+      - name: Create GitHub Release with the .tgz asset
+        uses: softprops/action-gh-release@v2
+        with:
+          # Path is relative to the repo root (GITHUB_WORKSPACE), not the step's
+          # working-directory — the action runs from the workspace root.
+          files: packages/ludus/ludus-*.tgz
+          generate_release_notes: true
+          body: |
+            ## Install
+
+            Install the newest release directly from the stable "latest" URL
+            (always resolves to the most recent published release):
+
+            ```bash
+            npm install -g https://github.com/${{ github.repository }}/releases/latest/download/ludus-latest.tgz
+            ludus setup
+            ```
+
+            Or download `ludus-${{ github.ref_name }}.tgz` (this exact version)
+            from the assets below and install the local file:
+
+            ```bash
+            npm install -g ludus-*.tgz
+            ludus setup
+            ```

@@ -1,0 +1,41 @@
+# Ludus — end-user stack (backend + MCP + frontend).
+# This is the PULL-BASED compose driven by `ludus up`: every service uses a
+# pre-built image pulled from Docker Hub (gabrieleconsonni/ludus-*) — there is
+# NO `build:` block here, on purpose.
+# For local development / contributing (building images from source instead
+# of pulling), use packages/ludus-board/docker-compose.yml instead.
+services:
+  backend:
+    image: gabrieleconsonni/ludus-server:latest
+    environment:
+      LUDUS_DATABASE_URL: sqlite:////data/ludus.db
+      LUDUS_BASELINES_DIR: /data/baselines
+      LUDUS_SCENARIOS_DIR: /app/scenarios
+      LUDUS_CORS_ORIGINS: "*"
+      # Optional: enable live adapters by passing an API key.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ludus-data:/data
+
+  mcp:
+    image: gabrieleconsonni/ludus-mcp:latest
+    environment:
+      LUDUS_API_URL: http://backend:8000
+      LUDUS_MCP_HOST: 0.0.0.0
+      LUDUS_MCP_PORT: 8765
+    ports:
+      - "${MCP_PORT:-8765}:8765"
+    depends_on:
+      - backend
+
+  frontend:
+    image: gabrieleconsonni/ludus-board:latest
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      - backend
+
+volumes:
+  ludus-data:

@@ -1,0 +1,31 @@
+{
+  "name": "ludus",
+  "version": "0.1.0",
+  "description": "Installer CLI for Ludus AI: installs the Claude plugin and runs the Ludus board (backend + MCP + frontend) from Docker Hub images.",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "ludus": "bin/ludus.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "scripts/postinstall.js",
+    "assets/docker-compose.yml",
+    "assets/.env.example",
+    "assets/ludus-claude-plugin"
+  ],
+  "scripts": {
+    "prepack": "node scripts/bundle-plugin.js",
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gabrieleakeron/ludus.git",
+    "directory": "packages/ludus"
+  },
+  "homepage": "https://github.com/gabrieleakeron/ludus#readme"
+}
