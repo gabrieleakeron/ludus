@@ -1,0 +1,9 @@
+{
+  "name": "ludus",
+  "version": "0.1.0",
+  "description": "Interface Claude with the Ludus AI eval backend via its MCP server: list targets, create scenarios, trigger runs and inspect results.",
+  "author": {
+    "name": "Ludus AI"
+  },
+  "keywords": ["ludus", "eval", "testing", "mcp"]
+}
