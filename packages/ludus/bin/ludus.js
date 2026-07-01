@@ -18,7 +18,7 @@ Usage:
   ludus <command> [options]
 
 Commands:
-  setup     Install the Claude plugin into ~/.claude/plugins/ludus
+  setup     Install the Claude plugin into ~/.claude/skills/ludus
   up        Start the board (backend + mcp + frontend) via Docker Compose,
             pulling images from Docker Hub
   down      Stop and remove the board's containers
@@ -52,6 +52,9 @@ function cmdSetup() {
   }
 
   console.log(`ludus setup: installed Claude plugin into ${result.dest}`);
+  console.log('');
+  console.log('In Claude Code, run /reload-plugins (or restart it) to load the ludus');
+  console.log('commands (/ludus-scenarios, /ludus-run, /ludus-runs) and MCP server.');
   console.log('');
   console.log('Next steps:');
   console.log('  ludus up        # start the board (backend :8000, mcp :8765, frontend :8080)');

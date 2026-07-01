@@ -20,6 +20,10 @@ ludus setup
 ludus up
 ```
 
+After `ludus setup`, open Claude Code and run **`/reload-plugins`** (or restart
+it) so it picks up the newly installed plugin — its commands (`/ludus-scenarios`,
+`/ludus-run`, `/ludus-runs`) and MCP server load on the next session.
+
 `npm install` runs a best-effort `postinstall` that already performs the
 `setup` step (installing the Claude plugin). Running `ludus setup` again
 afterwards is safe (idempotent) and useful if postinstall was skipped, e.g.
@@ -29,7 +33,7 @@ because you installed with `--ignore-scripts`.
 
 | Command | What it does |
 |---|---|
-| `ludus setup` | Copies the bundled Claude plugin into `~/.claude/plugins/ludus` |
+| `ludus setup` | Copies the bundled Claude plugin into `~/.claude/skills/ludus` (a skills-directory plugin — Claude Code auto-loads it as `ludus@skills-dir`, no marketplace needed) |
 | `ludus up` | `docker compose up -d` against the bundled pull-based compose — starts backend (`:8000`), MCP (`:8765`), frontend (`:8080`) |
 | `ludus down` | Stops and removes the board's containers |
 | `ludus status` | Shows the board's container status (`docker compose ps`) |
@@ -54,7 +58,7 @@ they work even without Docker installed.
 ```bash
 ludus down                        # stop the containers
 npm uninstall -g ludus            # remove the CLI
-rm -rf ~/.claude/plugins/ludus    # remove the installed plugin (optional)
+rm -rf ~/.claude/skills/ludus     # remove the installed plugin (optional)
 ```
 
 ## Contributing / local development

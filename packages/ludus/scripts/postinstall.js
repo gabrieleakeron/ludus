@@ -2,7 +2,7 @@
 'use strict';
 
 // npm postinstall hook: best-effort install of the Claude plugin into
-// ~/.claude/plugins/ludus, using the exact same code path as `ludus setup`
+// ~/.claude/skills/ludus, using the exact same code path as `ludus setup`
 // (lib/install.js#installPlugin). This must NEVER cause `npm install` to
 // fail — worst case we print a warning and exit 0, because:
 //   - CI environments may run with --ignore-scripts (this file then never
