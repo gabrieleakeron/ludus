@@ -25,3 +25,17 @@ venv/
 # (If you intend to commit a reference baseline for CI, force-add it explicitly:
 #  git add -f baselines/<scenario-id>.json)
 baselines/
+
+# Backend SQLite database (persisted in a Docker volume, not committed)
+*.db
+*.db-journal
+data/
+
+# Environment files
+.env
+
+# Frontend (Node/Vite)
+node_modules/
+frontend/dist/
+frontend/node_modules/
+frontend/*.tsbuildinfo
